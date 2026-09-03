@@ -5,9 +5,16 @@ import streamlit as st
 # Ensure project root is on Python's path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from dotenv import load_dotenv
 from src.agents.graph import build_review_graph
 from src.agents.state import CodeReviewState
+
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError:
+    # .env files are optional in hosted deployments; use st.secrets there.
+    def load_dotenv() -> bool:
+        return False
+
 
 load_dotenv()
 
