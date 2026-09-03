@@ -5,9 +5,10 @@ from src.agents.state import CodeReviewState
 from src.parsers.tree_sitter_parser import parse_code_structure
 from src.utils.linter import run_ruff_linter
 
+
 def analyze_code_node(state: CodeReviewState) -> CodeReviewState:
     """
-    LangGraph Node: Collects static analysis and uses LLM to identify 
+    LangGraph Node: Collects static analysis and uses LLM to identify
     logical bugs, security flaws, and performance anti-patterns.
     """
     code = state["original_code"]
@@ -23,16 +24,24 @@ def analyze_code_node(state: CodeReviewState) -> CodeReviewState:
 
     # 2. Query LLM for Logical Bugs
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
+
     # Retrieve model IDs and exclude non-chat endpoints
     models_page = client.models.list()
-    excluded_keywords = ["whisper", "guard", "embed", "vision", "compound", "canopylabs"]
-    
+    excluded_keywords = [
+        "whisper",
+        "guard",
+        "embed",
+        "vision",
+        "compound",
+        "canopylabs",
+    ]
+
     chat_models = [
-        m.id for m in models_page.data 
+        m.id
+        for m in models_page.data
         if not any(keyword in m.id.lower() for keyword in excluded_keywords)
     ]
-    
+
     if not chat_models:
         raise ValueError("No valid chat model found in Groq account.")
 
@@ -59,17 +68,15 @@ def analyze_code_node(state: CodeReviewState) -> CodeReviewState:
     """
 
     response = client.chat.completions.create(
-        model=target_model,
-        messages=[{"role": "user", "content": prompt}]
+        model=target_model, messages=[{"role": "user", "content": prompt}]
     )
 
     review_output = response.choices[0].message.content
 
     # Update state history and bugs list
     state["messages"].append("[Reviewer Node]: Analysis complete.")
-    state["detected_bugs"] = [{
-        "linter_issues": lint_res.get("issues", []),
-        "llm_analysis": review_output
-    }]
+    state["detected_bugs"] = [
+        {"linter_issues": lint_res.get("issues", []), "llm_analysis": review_output}
+    ]
 
     return state

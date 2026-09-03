@@ -4,6 +4,7 @@ from src.agents.reviewer import analyze_code_node
 from src.agents.patcher import generate_patch_node
 from src.agents.verifier import verify_patch_node
 
+
 def should_retry(state: CodeReviewState) -> str:
     """
     Conditional Routing Function:
@@ -13,11 +14,12 @@ def should_retry(state: CodeReviewState) -> str:
     """
     if state.get("verification_passed", False):
         return "end"
-    
+
     if state.get("retry_count", 0) < 3:
         return "patch"
-        
+
     return "end"
+
 
 def build_review_graph():
     """
@@ -37,12 +39,7 @@ def build_review_graph():
 
     # 3. Define Conditional Loop Routing
     workflow.add_conditional_edges(
-        "verify",
-        should_retry,
-        {
-            "patch": "patch",
-            "end": END
-        }
+        "verify", should_retry, {"patch": "patch", "end": END}
     )
 
     return workflow.compile()

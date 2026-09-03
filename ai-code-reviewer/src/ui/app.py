@@ -11,16 +11,26 @@ from src.agents.state import CodeReviewState
 
 load_dotenv()
 
+# Streamlit Cloud exposes secrets through st.secrets rather than a .env file.
+if not os.getenv("GROQ_API_KEY"):
+    try:
+        groq_api_key = st.secrets.get("GROQ_API_KEY")
+    except (FileNotFoundError, KeyError):
+        groq_api_key = None
+    if groq_api_key:
+        os.environ["GROQ_API_KEY"] = str(groq_api_key)
+
 # Streamlit Page Setup
 st.set_page_config(
     page_title="AI Agentic Code Reviewer",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Dark Modern CSS Styling
-st.markdown("""
+st.markdown(
+    """
 <style>
     /* Dark Theme Base */
     .stApp {
@@ -116,72 +126,101 @@ st.markdown("""
         border-top: 2px solid #58a6ff !important;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
-# Header Section
-st.markdown('<p class="title-text">⚡ AI Agentic Code Reviewer & Auto-Fixer</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-text">Multi-agent LangGraph workflow featuring static AST checks, LLM reasoning, and verified patch generation.</p>', unsafe_allow_html=True)
 
-# Sidebar Configuration
-with st.sidebar:
-    st.markdown("### ⚙️ Engine Settings")
-    language = st.selectbox("Language Engine", ["python"])
-    file_name = st.text_input("Target Filename", "main.py")
-    
-    st.markdown("---")
-    st.markdown("### 🤖 Agent Pipeline Architecture")
-    st.markdown("""
+def main() -> None:
+    """Render the Streamlit application."""
+    render_app()
+
+
+def render_app() -> None:
+    # Header Section
+    st.markdown(
+        '<p class="title-text">⚡ AI Agentic Code Reviewer & Auto-Fixer</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<p class="subtitle-text">Multi-agent LangGraph workflow featuring static AST checks, LLM reasoning, and verified patch generation.</p>',
+        unsafe_allow_html=True,
+    )
+
+    # Sidebar Configuration
+    with st.sidebar:
+        st.markdown("### ⚙️ Engine Settings")
+        language = st.selectbox("Language Engine", ["python"])
+        file_name = st.text_input("Target Filename", "main.py")
+
+        st.markdown("---")
+        st.markdown("### 🤖 Agent Pipeline Architecture")
+        st.markdown(
+            """
     - **1. AST & Static Linter**: Extracts AST metadata and pyflakes syntax errors.
     - **2. Reviewer Agent**: Evaluates logical bugs via LLM reasoning.
     - **3. Patch Generator**: Generates clean fix and unified diff.
     - **4. Verification Node**: Validates patch against static checks before release.
-    """)
+    """
+        )
 
-# Default Sample Code
-default_code = """def calculate_discount(price, discount):
+    # Default Sample Code
+    default_code = """def calculate_discount(price, discount):
     # Missing type/value validation, zero division risk, and unused variables
     temp_var = 100
     final_price = price - (price * discount)
     return final_price / price"""
 
-# Main Input Section
-col_left, col_right = st.columns([1, 1], gap="medium")
+    # Main Input Section
+    col_left, col_right = st.columns([1, 1], gap="medium")
 
-with col_left:
-    st.subheader("Source Input Code")
-    input_code = st.text_area("", value=default_code, height=320, key="code_input")
-    run_btn = st.button("🚀 Execute Autonomous Review & Fix Pipeline", type="primary")
+    with col_left:
+        st.subheader("Source Input Code")
+        input_code = st.text_area("", value=default_code, height=320, key="code_input")
+        run_btn = st.button(
+            "🚀 Execute Autonomous Review & Fix Pipeline", type="primary"
+        )
 
-with col_right:
-    st.subheader("System Status")
-    if "final_state" not in st.session_state and not run_btn:
-        st.info("Paste your source code in the left editor and hit Execute to trigger the agent review cycle.")
+    with col_right:
+        st.subheader("System Status")
+        if "final_state" not in st.session_state and not run_btn:
+            st.info(
+                "Paste your source code in the left editor and hit Execute to trigger the agent review cycle."
+            )
 
-# Execution Trigger
-if run_btn:
-    if not input_code.strip():
-        st.error("Provide non-empty source code to begin analysis.")
-    else:
-        with st.spinner("Processing AST parsing, LLM review, and automated patching..."):
-            initial_state: CodeReviewState = {
-                "file_path": file_name,
-                "original_code": input_code,
-                "language": language.lower(),
-                "ast_data": None,
-                "syntax_errors": [],
-                "detected_bugs": [],
-                "messages": [],
-                "fixed_code": None,
-                "diff": None,
-                "verification_passed": False,
-                "retry_count": 0
-            }
+    # Execution Trigger
+    if run_btn:
+        if not input_code.strip():
+            st.error("Provide non-empty source code to begin analysis.")
+        elif not os.getenv("GROQ_API_KEY"):
+            st.error(
+                "Configure GROQ_API_KEY in Streamlit secrets before running a review."
+            )
+        else:
+            with st.spinner(
+                "Processing AST parsing, LLM review, and automated patching..."
+            ):
+                initial_state: CodeReviewState = {
+                    "file_path": file_name,
+                    "original_code": input_code,
+                    "language": language.lower(),
+                    "ast_data": None,
+                    "syntax_errors": [],
+                    "detected_bugs": [],
+                    "messages": [],
+                    "fixed_code": None,
+                    "diff": None,
+                    "verification_passed": False,
+                    "retry_count": 0,
+                }
 
-            graph = build_review_graph()
-            st.session_state["final_state"] = graph.invoke(initial_state)
+                graph = build_review_graph()
+                st.session_state["final_state"] = graph.invoke(initial_state)
 
-# Display Analysis Output
-if "final_state" in st.session_state:
+    # Display Analysis Output
+    if "final_state" not in st.session_state:
+        return
+
     final_state = st.session_state["final_state"]
     is_passed = final_state.get("verification_passed", False)
     bugs = final_state.get("detected_bugs", [])
@@ -190,10 +229,15 @@ if "final_state" in st.session_state:
     # Custom HTML Metrics Dashboard
     st.markdown("---")
     st.subheader("📊 Execution Results Dashboard")
-    
-    status_html = f'<div class="metric-value-pass">PASSED</div>' if is_passed else f'<div class="metric-value-fail">FAILED</div>'
-    
-    st.markdown(f"""
+
+    status_html = (
+        f'<div class="metric-value-pass">PASSED</div>'
+        if is_passed
+        else f'<div class="metric-value-fail">FAILED</div>'
+    )
+
+    st.markdown(
+        f"""
     <div class="metric-container">
         <div class="metric-card">
             {status_html}
@@ -212,15 +256,19 @@ if "final_state" in st.session_state:
             <div class="metric-label">Target Engine</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Output Tabs
-    tab_fix, tab_diff, tab_report, tab_logs = st.tabs([
-        "📄 Side-by-Side Comparison", 
-        "🔍 Unified Diff", 
-        "🤖 LLM Audit Report", 
-        "📋 Agent Workflow Logs"
-    ])
+    tab_fix, tab_diff, tab_report, tab_logs = st.tabs(
+        [
+            "📄 Side-by-Side Comparison",
+            "🔍 Unified Diff",
+            "🤖 LLM Audit Report",
+            "📋 Agent Workflow Logs",
+        ]
+    )
 
     with tab_fix:
         c1, c2 = st.columns(2)
@@ -229,7 +277,10 @@ if "final_state" in st.session_state:
             st.code(input_code, language=language.lower())
         with c2:
             st.caption("Auto-Corrected Code")
-            st.code(final_state.get("fixed_code", "# No fix generated"), language=language.lower())
+            st.code(
+                final_state.get("fixed_code", "# No fix generated"),
+                language=language.lower(),
+            )
 
     with tab_diff:
         diff_output = final_state.get("diff", "")

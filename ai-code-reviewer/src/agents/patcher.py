@@ -3,24 +3,35 @@ import difflib
 from groq import Groq
 from src.agents.state import CodeReviewState
 
+
 def generate_patch_node(state: CodeReviewState) -> CodeReviewState:
     """
-    LangGraph Node: Takes detected bugs and original code to generate 
+    LangGraph Node: Takes detected bugs and original code to generate
     a corrected code version and computes the unified diff.
     """
     original_code = state["original_code"]
     lang = state.get("language", "python")
     bugs_data = state.get("detected_bugs", [])
 
-    analysis_summary = bugs_data[0]["llm_analysis"] if bugs_data else "No issues identified."
+    analysis_summary = (
+        bugs_data[0]["llm_analysis"] if bugs_data else "No issues identified."
+    )
 
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    
+
     # Filter for active chat models
     models_page = client.models.list()
-    excluded_keywords = ["whisper", "guard", "embed", "vision", "compound", "canopylabs"]
+    excluded_keywords = [
+        "whisper",
+        "guard",
+        "embed",
+        "vision",
+        "compound",
+        "canopylabs",
+    ]
     chat_models = [
-        m.id for m in models_page.data 
+        m.id
+        for m in models_page.data
         if not any(keyword in m.id.lower() for keyword in excluded_keywords)
     ]
     target_model = chat_models[0]
@@ -43,8 +54,7 @@ def generate_patch_node(state: CodeReviewState) -> CodeReviewState:
     """
 
     response = client.chat.completions.create(
-        model=target_model,
-        messages=[{"role": "user", "content": prompt}]
+        model=target_model, messages=[{"role": "user", "content": prompt}]
     )
 
     fixed_code = response.choices[0].message.content.strip()
@@ -62,10 +72,10 @@ def generate_patch_node(state: CodeReviewState) -> CodeReviewState:
     orig_lines = original_code.splitlines(keepends=True)
     fixed_lines = fixed_code.splitlines(keepends=True)
     diff_generator = difflib.unified_diff(
-        orig_lines, 
-        fixed_lines, 
-        fromfile="a/" + state.get("file_path", "target.py"), 
-        tofile="b/" + state.get("file_path", "target.py")
+        orig_lines,
+        fixed_lines,
+        fromfile="a/" + state.get("file_path", "target.py"),
+        tofile="b/" + state.get("file_path", "target.py"),
     )
     computed_diff = "".join(diff_generator)
 

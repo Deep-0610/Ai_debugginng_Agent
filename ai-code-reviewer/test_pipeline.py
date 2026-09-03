@@ -23,7 +23,7 @@ initial_state: CodeReviewState = {
     "fixed_code": None,
     "diff": None,
     "verification_passed": False,
-    "retry_count": 0
+    "retry_count": 0,
 }
 
 print("🚀 Executing Full Multi-Agent LangGraph Pipeline...")

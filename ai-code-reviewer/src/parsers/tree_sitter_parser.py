@@ -1,6 +1,7 @@
 import ast
 from typing import Dict, Any, List
 
+
 def parse_code_structure(code_content: str, language: str = "python") -> Dict[str, Any]:
     """
     Parses code string to extract structural metadata (functions, classes, imports)
@@ -22,10 +23,10 @@ def parse_code_structure(code_content: str, language: str = "python") -> Dict[st
             syntax_errors.append(f"Line {se.lineno}: {se.msg}")
         except Exception as e:
             syntax_errors.append(str(e))
-    
+
     return {
         "is_valid": len(syntax_errors) == 0,
         "functions": functions,
         "classes": classes,
-        "syntax_errors": syntax_errors
+        "syntax_errors": syntax_errors,
     }
