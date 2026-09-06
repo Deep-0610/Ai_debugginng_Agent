@@ -1,307 +1,175 @@
 import os
-import sys
 import streamlit as st
+import pandas as pd
+from typing import Dict, Any
 
-# Ensure project root is on Python's path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-from src.agents.graph import build_review_graph
-from src.agents.state import CodeReviewState
-
-try:
-    from dotenv import load_dotenv
-except ModuleNotFoundError:
-    # .env files are optional in hosted deployments; use st.secrets there.
-    def load_dotenv() -> bool:
-        return False
-
-
-load_dotenv()
-
-# Streamlit Cloud exposes secrets through st.secrets rather than a .env file.
-if not os.getenv("GROQ_API_KEY"):
-    try:
-        groq_api_key = st.secrets.get("GROQ_API_KEY")
-    except (FileNotFoundError, KeyError):
-        groq_api_key = None
-    if groq_api_key:
-        os.environ["GROQ_API_KEY"] = str(groq_api_key)
-
-# Streamlit Page Setup
+# Page Configuration
 st.set_page_config(
-    page_title="AI Agentic Code Reviewer",
-    page_icon="⚡",
+    page_title="AI Code Reviewer & Debugger",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Dark Modern CSS Styling
+# Custom Styling
 st.markdown(
     """
-<style>
-    /* Dark Theme Base */
-    .stApp {
-        background-color: #0d1117;
-        color: #c9d1d9;
-    }
-    
-    /* Header Styling */
-    .title-text {
+    <style>
+    .main-header {
         font-size: 2.2rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #58a6ff, #bc8cff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0px;
-    }
-    .subtitle-text {
-        font-size: 0.95rem;
-        color: #8b949e;
-        margin-bottom: 25px;
-    }
-
-    /* Metric Glassmorphism Cards */
-    .metric-container {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-    }
-    .metric-card {
-        flex: 1;
-        background: #161b22;
-        border: 1px solid #30363d;
-        border-radius: 10px;
-        padding: 16px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .metric-value-pass {
-        font-size: 1.5rem;
         font-weight: 700;
-        color: #3fb950;
+        color: #1E88E5;
+        margin-bottom: 0.5rem;
     }
-    .metric-value-fail {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #f85149;
+    .sub-header {
+        font-size: 1.1rem;
+        color: #555555;
+        margin-bottom: 1.5rem;
     }
-    .metric-value-neutral {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #58a6ff;
+    .stCodeBlock {
+        border-radius: 8px;
     }
-    .metric-label {
-        font-size: 0.8rem;
-        color: #8b949e;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-top: 4px;
-    }
-
-    /* Button Styling */
-    .stButton>button {
-        background: linear-gradient(135deg, #238636, #2ea043) !important;
-        color: #ffffff !important;
-        border: none !important;
-        font-weight: 600 !important;
-        border-radius: 8px !important;
-        height: 3.2em !important;
-        transition: all 0.2s ease !important;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(46, 160, 67, 0.4) !important;
-    }
-
-    /* Tab Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        border-bottom: 1px solid #30363d;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        border-radius: 6px 6px 0px 0px;
-        color: #8b949e;
-        background-color: #161b22;
-        border: 1px solid #30363d;
-        border-bottom: none;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #21262d !important;
-        color: #58a6ff !important;
-        font-weight: 600;
-        border-top: 2px solid #58a6ff !important;
-    }
-</style>
-""",
-    unsafe_allow_html=True,
+    </style>
+    """,
+    unsafe_allow_html=False,
 )
 
 
-def main() -> None:
-    """Render the Streamlit application."""
-    render_app()
-
-
-def render_app() -> None:
-    # Header Section
-    st.markdown(
-        '<p class="title-text">⚡ AI Agentic Code Reviewer & Auto-Fixer</p>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<p class="subtitle-text">Multi-agent LangGraph workflow featuring static AST checks, LLM reasoning, and verified patch generation.</p>',
-        unsafe_allow_html=True,
-    )
-
-    # Sidebar Configuration
-    with st.sidebar:
-        st.markdown("### ⚙️ Engine Settings")
-        language = st.selectbox("Language Engine", ["python"])
-        file_name = st.text_input("Target Filename", "main.py")
-
-        st.markdown("---")
-        st.markdown("### 🤖 Agent Pipeline Architecture")
-        st.markdown(
-            """
-    - **1. AST & Static Linter**: Extracts AST metadata and pyflakes syntax errors.
-    - **2. Reviewer Agent**: Evaluates logical bugs via LLM reasoning.
-    - **3. Patch Generator**: Generates clean fix and unified diff.
-    - **4. Verification Node**: Validates patch against static checks before release.
+def mock_ai_code_reviewer(code: str, language: str, analysis_type: str) -> Dict[str, Any]:
     """
-        )
+    Placeholder/Fallback reviewer function.
+    Replace or integrate this with your backend agent logic (e.g., LangChain/LlamaIndex/OpenAI agent).
+    """
+    # Import your custom agent logic here if available:
+    # from src.agent.reviewer import analyze_code
+    
+    return {
+        "status": "success",
+        "bugs_found": [
+            {"line": 1, "issue": "Potential missing type hints.", "severity": "Low"},
+            {"line": 3, "issue": "Unhandled edge case for null/empty input.", "severity": "Medium"}
+        ],
+        "refactored_code": f"# Refactored {language} Code\n" + code + "\n\n# Optimized for performance & safety",
+        "explanation": "1. Added type safety checks.\n2. Improved error handling.\n3. Followed PEP8/best-practice conventions.",
+        "complexity": {"Before": "O(N^2)", "After": "O(N)"}
+    }
 
-    # Default Sample Code
-    default_code = """def calculate_discount(price, discount):
-    # Missing type/value validation, zero division risk, and unused variables
-    temp_var = 100
-    final_price = price - (price * discount)
-    return final_price / price"""
 
-    # Main Input Section
-    col_left, col_right = st.columns([1, 1], gap="medium")
-
-    with col_left:
-        st.subheader("Source Input Code")
-        input_code = st.text_area("", value=default_code, height=320, key="code_input")
-        run_btn = st.button(
-            "🚀 Execute Autonomous Review & Fix Pipeline", type="primary"
-        )
-
-    with col_right:
-        st.subheader("System Status")
-        if "final_state" not in st.session_state and not run_btn:
-            st.info(
-                "Paste your source code in the left editor and hit Execute to trigger the agent review cycle."
-            )
-
-    # Execution Trigger
-    if run_btn:
-        if not input_code.strip():
-            st.error("Provide non-empty source code to begin analysis.")
-        elif not os.getenv("GROQ_API_KEY"):
-            st.error(
-                "Configure GROQ_API_KEY in Streamlit secrets before running a review."
-            )
-        else:
-            with st.spinner(
-                "Processing AST parsing, LLM review, and automated patching..."
-            ):
-                initial_state: CodeReviewState = {
-                    "file_path": file_name,
-                    "original_code": input_code,
-                    "language": language.lower(),
-                    "ast_data": None,
-                    "syntax_errors": [],
-                    "detected_bugs": [],
-                    "messages": [],
-                    "fixed_code": None,
-                    "diff": None,
-                    "verification_passed": False,
-                    "retry_count": 0,
-                }
-
-                graph = build_review_graph()
-                st.session_state["final_state"] = graph.invoke(initial_state)
-
-    # Display Analysis Output
-    if "final_state" not in st.session_state:
-        return
-
-    final_state = st.session_state["final_state"]
-    is_passed = final_state.get("verification_passed", False)
-    bugs = final_state.get("detected_bugs", [])
-    linter_count = len(bugs[0].get("linter_issues", [])) if bugs else 0
-
-    # Custom HTML Metrics Dashboard
-    st.markdown("---")
-    st.subheader("📊 Execution Results Dashboard")
-
-    status_html = (
-        f'<div class="metric-value-pass">PASSED</div>'
-        if is_passed
-        else f'<div class="metric-value-fail">FAILED</div>'
+def main():
+    # --- Sidebar Configuration ---
+    st.sidebar.title("⚙️ Configuration")
+    
+    # API Key Handling
+    api_key = st.sidebar.text_input(
+        "API Key (OpenAI / Anthropic)",
+        type="password",
+        help="Enter your API key to run the agent.",
+        value=os.getenv("OPENAI_API_KEY", "")
+    )
+    
+    language = st.sidebar.selectbox(
+        "Programming Language",
+        ["Python", "JavaScript", "TypeScript", "C++", "Java", "Go", "Rust", "SQL"],
+        index=0
+    )
+    
+    review_mode = st.sidebar.radio(
+        "Review Mode",
+        ["Comprehensive", "Bug Fixes Only", "Performance & Refactoring", "Security Audit"],
+        index=0
+    )
+    
+    st.sidebar.markdown("---")
+    st.sidebar.info(
+        "💡 **Tip:** Select specific modes to tailor the debugging depth and response structure."
     )
 
+    # --- Main UI Content ---
+    st.markdown('<div class="main-header">🤖 AI Code Reviewer & Debugging Agent</div>', unsafe_allow_html=True)
     st.markdown(
-        f"""
-    <div class="metric-container">
-        <div class="metric-card">
-            {status_html}
-            <div class="metric-label">Verification Gate</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-value-neutral">{linter_count}</div>
-            <div class="metric-label">Static Lint Issues</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-value-neutral">{final_state.get("retry_count", 0)}</div>
-            <div class="metric-label">Auto-Repair Cycles</div>
-        </div>
-        <div class="metric-card">
-            <div class="metric-value-neutral">{language.upper()}</div>
-            <div class="metric-label">Target Engine</div>
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
+        '<div class="sub-header">Paste your code below to analyze bugs, security risks, performance bottlenecks, and automated refactoring.</div>',
+        unsafe_allow_html=True
     )
 
-    # Output Tabs
-    tab_fix, tab_diff, tab_report, tab_logs = st.tabs(
-        [
-            "📄 Side-by-Side Comparison",
-            "🔍 Unified Diff",
-            "🤖 LLM Audit Report",
-            "📋 Agent Workflow Logs",
-        ]
-    )
+    col_input, col_output = st.columns([1, 1], gap="medium")
 
-    with tab_fix:
-        c1, c2 = st.columns(2)
-        with c1:
-            st.caption("Original Code")
-            st.code(input_code, language=language.lower())
-        with c2:
-            st.caption("Auto-Corrected Code")
-            st.code(
-                final_state.get("fixed_code", "# No fix generated"),
-                language=language.lower(),
-            )
+    # Left Column: Input Code
+    with col_input:
+        st.subheader("📝 Source Code")
+        
+        sample_code = """def calculate_total(items):
+    total = 0
+    for item in items:
+        total += item['price'] * item['quantity']
+    return total"""
 
-    with tab_diff:
-        diff_output = final_state.get("diff", "")
-        if diff_output:
-            st.code(diff_output, language="diff")
+        user_code = st.text_area(
+            "Enter or paste code:",
+            value=sample_code,
+            height=380,
+            help="Paste the snippet you want the agent to review.",
+        )
+
+        btn_analyze = st.button("🚀 Analyze & Debug Code", type="primary", use_container_width=True)
+
+    # Right Column: Output & Results
+    with col_output:
+        st.subheader("🔍 Agent Insights")
+
+        if btn_analyze:
+            if not user_code.strip():
+                st.warning("⚠️ Please enter some code to analyze.")
+                return
+
+            with st.spinner("Analyzing code structure, logic, and potential vulnerabilities..."):
+                try:
+                    # Execute analysis (Replace mock function with your actual backend integration)
+                    result = mock_ai_code_reviewer(user_code, language, review_mode)
+
+                    st.success("Analysis Complete!")
+
+                    # Results Tabs
+                    tab_summary, tab_refactored, tab_bugs = st.tabs(
+                        ["📋 Feedback & Explanation", "⚡ Refactored Code", "🐞 Identified Issues"]
+                    )
+
+                    with tab_summary:
+                        st.markdown("### Agent Feedback")
+                        st.markdown(result.get("explanation", "No detailed summary provided."))
+                        
+                        st.markdown("#### Complexity Comparison")
+                        comp = result.get("complexity", {})
+                        c1, c2 = st.columns(2)
+                        c1.metric("Time Complexity (Before)", comp.get("Before", "N/A"))
+                        c2.metric("Time Complexity (After)", comp.get("After", "N/A"))
+
+                    with tab_refactored:
+                        st.markdown("### Suggested Improved Code")
+                        refactored_code = result.get("refactored_code", "")
+                        st.code(refactored_code, language=language.lower())
+
+                        # Download button for refactored code
+                        st.download_button(
+                            label="📥 Download Refactored Code",
+                            data=refactored_code,
+                            file_name=f"refactored_code.{language.lower()}",
+                            mime="text/plain",
+                        )
+
+                    with tab_bugs:
+                        st.markdown("### Detected Issues")
+                        bugs = result.get("bugs_found", [])
+                        if bugs:
+                            df_bugs = pd.DataFrame(bugs)
+                            st.dataframe(df_bugs, use_container_width=True)
+                        else:
+                            st.info("No explicit bugs detected in this snippet.")
+
+                except Exception as e:
+                    st.error(f"An error occurred during execution: {str(e)}")
         else:
-            st.info("No code modifications were required.")
+            st.info("👈 Paste your code on the left and click **Analyze & Debug Code** to start.")
 
-    with tab_report:
-        if bugs and "llm_analysis" in bugs[0]:
-            st.markdown(bugs[0]["llm_analysis"])
-        else:
-            st.write("No report generated.")
 
-    with tab_logs:
-        for msg in final_state.get("messages", []):
-            st.markdown(f"`{msg}`")
+if __name__ == "__main__":
+    main()
